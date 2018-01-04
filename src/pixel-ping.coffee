@@ -21,6 +21,7 @@ store = {}
 # Record a single incoming hit from the remote pixel.
 record = (params) ->
   return unless node = params.pathname?.split('/')[2]
+  node = node + '~' + params.referer
   store[node] or= 0
   store[node] +=  1
 
@@ -134,9 +135,9 @@ else
 # Create a `Server` object. When a request comes in, ensure that it's looking
 # for `pixel.gif`. If it is, serve the pixel and record the request.
 server = protocol.createServer protocolOptions, (req, res) ->
-  params = url.parse req.url, true
+  params = url.parse req.url, true, true
+  params["referer"] = req.headers.referer
   allElements = params.pathname.split('/')
-  #nodeElement = allElements[2]
   lastElement = allElements[allElements.length - 1]
   if lastElement is 'count.gif'
     res.writeHead 200, pixelHeaders
