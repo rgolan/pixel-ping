@@ -20,9 +20,9 @@ store = {}
 
 # Record a single incoming hit from the remote pixel.
 record = (params) ->
-  return unless key = params.query?.key
-  store[key] or= 0
-  store[key] +=  1
+  return unless node = params.pathname?.split('/')[2]
+  store[node] or= 0
+  store[node] +=  1
 
 # Serializes the current `store` to JSON, and creates a fresh one. Add a
 # `secret` token to the request object, if configured.
@@ -60,8 +60,8 @@ flush = ->
 # Log the contents of the `store` to **stdout**. Happens on every flush, so that
 # there's a record of hits if something goes awry.
 log = (hash) ->
-  for key, hits of hash
-    console.info "#{hits}:\t#{key}"
+  for node, hits of hash
+    console.info "#{hits}:\t#{node}"
 
 #### Configuration
 
@@ -135,7 +135,10 @@ else
 # for `pixel.gif`. If it is, serve the pixel and record the request.
 server = protocol.createServer protocolOptions, (req, res) ->
   params = url.parse req.url, true
-  if params.pathname is '/pixel.gif'
+  allElements = params.pathname.split('/')
+  #nodeElement = allElements[2]
+  lastElement = allElements[allElements.length - 1]
+  if lastElement is 'count.gif'
     res.writeHead 200, pixelHeaders
     res.end pixel
     record params
