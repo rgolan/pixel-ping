@@ -20,8 +20,12 @@ store = {}
 
 # Record a single incoming hit from the remote pixel.
 record = (params) ->
-  return unless node = params.pathname?.split('/')[2]
-  node = node + '~' + params.referer
+  # Get node ID from path.
+  return unless nodeID = params.pathname?.split('/')[2]
+  separator = '^'
+  # Truncate timestamp to 10 digits so Drupal doesn't overflow.
+  hitDate = Date.now().toString().substr(0, 10)
+  node = hitDate + separator + params.remoteAddress + separator + params.domain + separator + params.referrerPath + separator + nodeID
   store[node] or= 0
   store[node] +=  1
 
@@ -136,10 +140,19 @@ else
 # for `pixel.gif`. If it is, serve the pixel and record the request.
 server = protocol.createServer protocolOptions, (req, res) ->
   params = url.parse req.url, true, true
-  params["referer"] = req.headers.referer
   allElements = params.pathname.split('/')
   lastElement = allElements[allElements.length - 1]
   if lastElement is 'count.gif'
+    params["remoteAddress"] = req.connection.remoteAddress
+    urlParts = req.headers.referer.split('/')
+    domain = urlParts[0] + '//' + urlParts[2]
+    params["domain"] = domain
+    referrerPath = urlParts
+    referrerPath.shift()
+    referrerPath.shift()
+    referrerPath.shift()
+    referrerPath = referrerPath.join('/')
+    params["referrerPath"] = '/' + referrerPath
     res.writeHead 200, pixelHeaders
     res.end pixel
     record params
